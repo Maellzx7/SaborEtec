@@ -1,0 +1,20 @@
+merenda-etec/
+│
+├── config/
+│   ├── database.php      ← conexão com MySQL (PDO)
+│   └── config.php        ← constantes (nome do site, sessão etc.)
+│
+├── sql/
+│   └── banco.sql         ← cria todas as tabelas do zero
+│
+├── assets/
+│   ├── style.css         ← estilo com a paleta vermelha (#38050e, #640d15, #810e13, #ae2831)
+│   └── uploads/          ← fotos dos pratos (enviadas pelo supervisor)
+│
+├── index.php             ← página pública: pratos da semana com hover de descrição
+├── login.php             ← login de aluno e supervisor/sub-supervisor
+├── dashboard.php         ← painel com novidades, aviso de mudança de cardápio
+├── cardapio.php          ← CRUD de pratos (ingredientes, nutrição, modo de preparo)
+├── usuarios.php          ← CRUD de usuários + adicionar sub-supervisores
+├── prato.php             ← página de detalhe de cada prato
+└── logout.php            ← encerra sessão
