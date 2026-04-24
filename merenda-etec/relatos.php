@@ -1,17 +1,11 @@
 <?php
-// ============================================================
-// ARQUIVO: relatos.php (raiz do projeto)
-// DESCRIÇÃO: Sistema de relatos dos alunos — envio e visualização
-//            Supervisor pode ver e responder todos os relatos
-// Sistema Sabor Etec — ETEC de Peruíbe
-// ============================================================
+
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/_layout.php';
 
 $pdo  = conectar();
 $erro = '';
 
-// ── Enviar relato (aluno ou visitante logado) ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'enviar_relato') {
     requerLogin();
     $tipo     = $_POST['tipo']     ?? 'sugestao';
@@ -32,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'enviar_
     }
 }
 
-// ── Responder relato (supervisor) ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'responder') {
     requerSupervisor();
     $id       = (int)($_POST['relato_id'] ?? 0);
@@ -46,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'respond
     redirecionar(SITE_URL . '/relatos.php');
 }
 
-// ── Marcar como lido ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'marcar_lido') {
     requerSupervisor();
     $id = (int)($_POST['relato_id'] ?? 0);
@@ -54,9 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'marcar_
     redirecionar(SITE_URL . '/relatos.php');
 }
 
-// ── Buscar relatos ──
 if (estaLogado() && in_array(perfil(), ['supervisor','sub_supervisor'])) {
-    // Supervisor vê todos
+    
     $relatos = $pdo->query("
         SELECT r.*, u.nome AS autor_nome, u.perfil AS autor_perfil,
                s.nome AS respondido_nome
@@ -66,7 +57,7 @@ if (estaLogado() && in_array(perfil(), ['supervisor','sub_supervisor'])) {
         ORDER BY r.criado_em DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
 } elseif (estaLogado()) {
-    // Aluno vê apenas os seus
+    
     $stmt = $pdo->prepare("
         SELECT r.*, u.nome AS autor_nome, u.perfil AS autor_perfil,
                s.nome AS respondido_nome
@@ -138,7 +129,6 @@ $statusLabel = [
     position: relative;
 }
 
-/* Grid principal */
 .relatos-layout {
     display: grid;
     grid-template-columns: 420px 1fr;
@@ -146,7 +136,6 @@ $statusLabel = [
     align-items: start;
 }
 
-/* Card de envio */
 .envio-card {
     background: var(--branco);
     border-radius: var(--r-lg);
@@ -173,7 +162,6 @@ $statusLabel = [
 
 .envio-card-body { padding: 24px; }
 
-/* Seletor de tipo com ícones */
 .tipo-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -215,7 +203,6 @@ $statusLabel = [
 
 .tipo-opt.selecionado .tipo-opt-label { color: var(--c2); }
 
-/* Checkbox anonimo */
 .check-row {
     display: flex;
     align-items: center;
@@ -240,7 +227,6 @@ $statusLabel = [
 .check-row-txt { font-size: .8rem; color: var(--texto2); line-height: 1.4; }
 .check-row-txt strong { color: var(--c2); display: block; font-size: .82rem; }
 
-/* Lista de relatos */
 .relatos-lista { display: flex; flex-direction: column; gap: 16px; }
 
 .relato-card {
@@ -323,7 +309,6 @@ $statusLabel = [
 
 .relato-resposta-txt { font-size: .85rem; color: var(--texto); line-height: 1.65; }
 
-/* Formulário de resposta (supervisor) */
 .resp-form {
     margin-top: 14px;
     padding-top: 14px;
@@ -347,7 +332,6 @@ $statusLabel = [
 }
 .resp-form textarea:focus { border-color: var(--c4); background: var(--branco); box-shadow: 0 0 0 3px rgba(174,40,49,.1); }
 
-/* Login CTA */
 .login-cta {
     background: var(--branco);
     border: 1px solid var(--borda);
@@ -360,7 +344,6 @@ $statusLabel = [
 .login-cta h3 { font-family: var(--titulo); font-size: 1.5rem; color: var(--c2); margin-bottom: 8px; }
 .login-cta p  { font-size: .88rem; color: var(--texto2); margin-bottom: 20px; }
 
-/* Vazio */
 .relatos-vazio {
     background: var(--branco);
     border: 1px dashed var(--borda);
@@ -380,7 +363,6 @@ $statusLabel = [
 <body>
 <?php renderHeader('relatos.php'); ?>
 
-<!-- Hero -->
 <div class="page-hero">
     <h1>Sua Voz Importa</h1>
     <p>Envie sua sugestão, restrição alimentar, elogio ou reclamação. Juntos melhoramos a merenda da ETEC.</p>
@@ -395,7 +377,6 @@ $statusLabel = [
 
     <div class="relatos-layout">
 
-        <!-- ══ FORMULÁRIO DE ENVIO ══ -->
         <div>
             <?php if (!estaLogado()): ?>
                 <div class="login-cta">
@@ -417,7 +398,6 @@ $statusLabel = [
                             <input type="hidden" name="acao" value="enviar_relato">
                             <input type="hidden" name="tipo" id="tipoHidden" value="sugestao">
 
-                            <!-- Tipo com clique visual -->
                             <div style="font-size:.78rem;font-weight:600;color:var(--c2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Tipo de relato</div>
                             <div class="tipo-grid">
                                 <?php
@@ -467,7 +447,6 @@ $statusLabel = [
             <?php endif; ?>
         </div>
 
-        <!-- ══ LISTA DE RELATOS ══ -->
         <div>
             <div class="sec-titulo" style="margin-bottom:4px">
                 <?= (estaLogado() && in_array(perfil(),['supervisor','sub_supervisor'])) ? 'Todos os relatos' : 'Meus relatos' ?>
@@ -514,7 +493,6 @@ $statusLabel = [
                                 </div>
                             </div>
 
-                            <!-- Marcar como lido (supervisor) -->
                             <?php if (in_array(perfil(),['supervisor','sub_supervisor']) && $r['status'] === 'pendente'): ?>
                             <form method="POST" style="flex-shrink:0">
                                 <input type="hidden" name="acao" value="marcar_lido">
@@ -527,7 +505,6 @@ $statusLabel = [
                         <div class="relato-body">
                             <div class="relato-mensagem"><?= nl2br(escape($r['mensagem'])) ?></div>
 
-                            <!-- Resposta existente -->
                             <?php if ($r['resposta']): ?>
                             <div class="relato-resposta">
                                 <div class="relato-resposta-titulo">
@@ -538,7 +515,6 @@ $statusLabel = [
                             </div>
                             <?php endif; ?>
 
-                            <!-- Formulário de resposta (supervisor) -->
                             <?php if (in_array(perfil(),['supervisor','sub_supervisor']) && !$r['resposta']): ?>
                             <div class="resp-form">
                                 <form method="POST">

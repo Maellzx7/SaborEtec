@@ -1,11 +1,6 @@
 <?php
-// ============================================================
-// ARQUIVO: config/config.php
-// DESCRIÇÃO: Constantes e funções globais do sistema
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
 
-// Exibe erros durante desenvolvimento — remova em produção
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -14,7 +9,6 @@ require_once __DIR__ . '/database.php';
 
 define('SITE_NOME', 'Merenda ETEC Peruíbe');
 
-// Detecta automaticamente o caminho base — funciona no XAMPP sem configuração manual
 $_protocolo = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $_host      = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $_raiz      = str_replace('\\', '/', realpath(__DIR__ . '/..'));

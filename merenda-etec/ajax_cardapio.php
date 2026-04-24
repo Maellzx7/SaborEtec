@@ -1,18 +1,11 @@
 <?php
-// ============================================================
-// ARQUIVO: ajax_cardapio.php (raiz do projeto)
-// DESCRIÇÃO: Endpoint AJAX — retorna cardápio de um período.
-//            Usado pelo calendário do aluno (público) e do
-//            supervisor (dashboard). Sem restrição de perfil.
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
+
 
 require_once __DIR__ . '/config/config.php';
 
 $inicio = $_GET['inicio'] ?? date('Y-m-01');
 $fim    = $_GET['fim']    ?? date('Y-m-t');
 
-// Valida formato YYYY-MM-DD
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $inicio) ||
     !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fim)) {
     header('Content-Type: application/json');

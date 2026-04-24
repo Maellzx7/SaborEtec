@@ -1,9 +1,5 @@
 <?php
-// ============================================================
-// ARQUIVO: logout.php (raiz do projeto)
-// DESCRIÇÃO: Encerra a sessão do usuário e redireciona
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
+
 
 require_once __DIR__ . '/config/config.php';
 

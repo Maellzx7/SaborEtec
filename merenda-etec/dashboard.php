@@ -1,11 +1,5 @@
 <?php
-// ============================================================
-// ARQUIVO: dashboard.php (raiz do projeto)
-// DESCRIÇÃO: Painel do supervisor com calendário interativo
-//            para montar o cardápio por dia
-// Acesso: supervisor e sub_supervisor
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
+
 
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/_layout.php';
@@ -13,7 +7,6 @@ requerSupervisor();
 
 $pdo = conectar();
 
-// --- POST: publicar novidade ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postAcao = $_POST['acao'] ?? '';
 
@@ -38,7 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar(SITE_URL . '/dashboard.php');
     }
 
-    // Salvar prato num dia via calendário (AJAX ou POST normal)
     if ($postAcao === 'salvar_dia_cardapio') {
         $dataRef  = $_POST['data_ref'] ?? '';
         $pratoId  = (int)($_POST['prato_id'] ?? 0);
@@ -54,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ->execute([$dia, $dataRef]);
             }
         }
-        // Resposta JSON para AJAX
         if (!empty($_POST['ajax'])) {
             header('Content-Type: application/json');
             echo json_encode(['ok' => true]);
@@ -65,15 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Estatísticas
 $totalPratos    = $pdo->query("SELECT COUNT(*) FROM pratos WHERE ativo=1")->fetchColumn();
 $totalUsuarios  = $pdo->query("SELECT COUNT(*) FROM usuarios WHERE ativo=1")->fetchColumn();
 $totalNovidades = $pdo->query("SELECT COUNT(*) FROM novidades WHERE ativo=1")->fetchColumn();
 
-// Todos os pratos para o select do calendário
 $todosPratos = $pdo->query("SELECT id, nome FROM pratos WHERE ativo=1 ORDER BY nome")->fetchAll();
 
-// Cardápio do mês atual (para marcar dias no calendário)
 $mesAtual   = date('Y-m');
 $inicioMes  = $mesAtual . '-01';
 $fimMes     = date('Y-m-t');
@@ -86,7 +74,6 @@ foreach ($stmtMes->fetchAll() as $row) {
     $cardapioMes[$row['data_referencia']] = $row;
 }
 
-// Novidades ativas
 $novidades = $pdo->query("
     SELECT n.*, u.nome AS autor
     FROM novidades n JOIN usuarios u ON n.usuario_id = u.id
@@ -103,7 +90,6 @@ $novidades = $pdo->query("
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/style.css">
     <style>
-        /* Calendário */
         .calendario-wrap {
             background: #fff;
             border-radius: 16px;
@@ -229,7 +215,6 @@ $novidades = $pdo->query("
 
         .cal-adicionar:hover { color: var(--c4); }
 
-        /* Modal de seleção de prato */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -288,7 +273,6 @@ $novidades = $pdo->query("
 
         .modal-acoes { display: flex; gap: 10px; }
 
-        /* Stats */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -329,7 +313,6 @@ $novidades = $pdo->query("
             margin-top: 3px;
         }
 
-        /* Seção de avisos */
         .avisos-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -359,21 +342,21 @@ $novidades = $pdo->query("
     <!-- Stats -->
     <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-icon">🍲</div>
+            <div class="stat-icon"></div>
             <div>
                 <div class="stat-num"><?= $totalPratos ?></div>
                 <div class="stat-label">Pratos cadastrados</div>
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon">👥</div>
+            <div class="stat-icon"></div>
             <div>
                 <div class="stat-num"><?= $totalUsuarios ?></div>
                 <div class="stat-label">Usuários ativos</div>
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon">📢</div>
+            <div class="stat-icon"></div>
             <div>
                 <div class="stat-num"><?= $totalNovidades ?></div>
                 <div class="stat-label">Avisos ativos</div>
@@ -381,7 +364,6 @@ $novidades = $pdo->query("
         </div>
     </div>
 
-    <!-- CALENDÁRIO -->
     <div class="calendario-wrap">
         <div class="cal-header">
             <button class="cal-nav-btn" onclick="mudarMes(-1)">&#8592;</button>
@@ -395,10 +377,8 @@ $novidades = $pdo->query("
         <div class="cal-grid" id="calGrid"></div>
     </div>
 
-    <!-- AVISOS -->
     <div class="avisos-grid">
 
-        <!-- Publicar aviso -->
         <div class="card-form" style="margin:0">
             <h2 style="font-family:var(--fonte-titulo);font-size:1.15rem;color:var(--c2);margin-bottom:18px">
                 📢 Publicar aviso
@@ -408,9 +388,9 @@ $novidades = $pdo->query("
                 <div class="form-grupo">
                     <label>Tipo</label>
                     <select name="tipo">
-                        <option value="info">📢 Informação</option>
-                        <option value="mudanca">🔄 Mudança de cardápio</option>
-                        <option value="aviso">⚠️ Aviso importante</option>
+                        <option value="info"> Informação</option>
+                        <option value="mudanca"> Mudança de cardápio</option>
+                        <option value="aviso"> Aviso importante</option>
                     </select>
                 </div>
                 <div class="form-grupo">
@@ -427,7 +407,6 @@ $novidades = $pdo->query("
             </form>
         </div>
 
-        <!-- Lista de avisos -->
         <div>
             <h2 style="font-family:var(--fonte-titulo);font-size:1.15rem;color:var(--c2);margin-bottom:14px">
                 Avisos publicados
@@ -453,9 +432,9 @@ $novidades = $pdo->query("
             <?php endif; ?>
 
             <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:10px">
-                <a href="<?= SITE_URL ?>/cardapio.php" class="btn btn-secundario">🍲 Gerenciar pratos</a>
-                <a href="<?= SITE_URL ?>/usuarios.php" class="btn btn-secundario">👥 Usuários</a>
-                <a href="<?= SITE_URL ?>/index.php" class="btn btn-secundario">🌐 Ver site</a>
+                <a href="<?= SITE_URL ?>/cardapio.php" class="btn btn-secundario"> Gerenciar pratos</a>
+                <a href="<?= SITE_URL ?>/usuarios.php" class="btn btn-secundario"> Usuários</a>
+                <a href="<?= SITE_URL ?>/index.php" class="btn btn-secundario"> Ver site</a>
             </div>
         </div>
     </div>
@@ -465,7 +444,6 @@ $novidades = $pdo->query("
 
 <?php renderFooter(); ?>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-titulo" id="modalTitulo">Selecionar prato</div>
@@ -484,7 +462,6 @@ $novidades = $pdo->query("
 </div>
 
 <script>
-// Dados do cardápio vindo do PHP (data => {pratoId, pratoNome})
 const cardapioExistente = <?= json_encode($cardapioMes) ?>;
 
 const DIAS_SEMANA_MAP = {1:'segunda',2:'terca',3:'quarta',4:'quinta',5:'sexta'};
@@ -510,7 +487,6 @@ function renderizarCalendario() {
     const totalDias   = new Date(anoAtual, mesAtual + 1, 0).getDate();
     const hoje        = new Date();
 
-    // Células vazias antes do primeiro dia
     for (let i = 0; i < primeiroDia; i++) {
         const cel = document.createElement('div');
         cel.className = 'cal-dia vazio';
@@ -527,7 +503,6 @@ function renderizarCalendario() {
         const cel = document.createElement('div');
         cel.className = 'cal-dia' + (isFds ? ' fds' : '') + (isHoje ? ' hoje' : '') + (isUtil ? ' util' : '');
 
-        // Número do dia
         const numEl = document.createElement('div');
         numEl.className = 'cal-dia-num';
         numEl.textContent = d;
@@ -563,7 +538,6 @@ function mudarMes(delta) {
     if (mesAtual < 0)  { mesAtual = 11; anoAtual--; }
     if (mesAtual > 11) { mesAtual = 0;  anoAtual++; }
 
-    // Recarregar cardápio do mês via AJAX
     const inicio = formatarData(anoAtual, mesAtual, 1);
     const fim    = formatarData(anoAtual, mesAtual, new Date(anoAtual, mesAtual+1, 0).getDate());
 
@@ -622,10 +596,8 @@ function salvarDia() {
         .catch(() => alert('Erro ao salvar. Tente novamente.'));
 }
 
-// ESC fecha modal
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
 
-// Init
 renderizarCalendario();
 
 function toggleMenu() {

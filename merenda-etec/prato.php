@@ -1,10 +1,4 @@
 <?php
-// ============================================================
-// ARQUIVO: prato.php (raiz do projeto)
-// DESCRIÇÃO: Detalhe público de um prato — ingredientes,
-//            valores nutricionais e modo de preparo
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
 
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/_layout.php';
@@ -45,7 +39,6 @@ if (!$prato) {
 
     <div class="prato-detalhe">
 
-        <!-- Foto -->
         <?php if ($prato['foto'] && file_exists(UPLOAD_DIR . $prato['foto'])): ?>
             <img src="<?= UPLOAD_URL . escape($prato['foto']) ?>"
                  alt="<?= escape($prato['nome']) ?>" class="prato-detalhe-foto">
@@ -91,23 +84,20 @@ if (!$prato) {
                 </div>
             <?php endif; ?>
 
-            <!-- Ingredientes -->
             <?php if ($prato['ingredientes']): ?>
                 <div class="detalhe-secao">
-                    <h3>🥕 Ingredientes</h3>
+                    <h3> Ingredientes</h3>
                     <p><?= nl2br(escape($prato['ingredientes'])) ?></p>
                 </div>
             <?php endif; ?>
 
-            <!-- Modo de preparo -->
             <?php if ($prato['modo_preparo']): ?>
                 <div class="detalhe-secao">
-                    <h3>👨‍🍳 Modo de preparo</h3>
+                    <h3> Modo de preparo</h3>
                     <p><?= nl2br(escape($prato['modo_preparo'])) ?></p>
                 </div>
             <?php endif; ?>
 
-            <!-- Botões de ação (supervisor) -->
             <?php if (estaLogado() && perfil() !== 'aluno'): ?>
                 <div style="margin-top:28px;padding-top:22px;border-top:2px solid var(--cinza-claro);display:flex;gap:12px">
                     <a href="<?= SITE_URL ?>/cardapio.php?acao=editar&id=<?= $prato['id'] ?>"

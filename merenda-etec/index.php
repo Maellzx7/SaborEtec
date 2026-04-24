@@ -1,15 +1,10 @@
 <?php
-// ============================================================
-// ARQUIVO: index.php (raiz do projeto)
-// DESCRIÇÃO: Página pública — Sabor Etec
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
+
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/_layout.php';
 
 $pdo = conectar();
 
-// Semana atual
 $hoje       = new DateTime();
 $dow        = (int)$hoje->format('N');
 $diasAteSeg = ($dow === 7) ? 1 : (($dow === 6) ? 2 : $dow - 1);
@@ -33,7 +28,6 @@ $novidades = $pdo->query("
     WHERE n.ativo = 1 ORDER BY n.criado_em DESC LIMIT 8
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Cardápio do mês para o calendário
 $inicioMes = date('Y-m-01');
 $fimMes    = date('Y-m-t');
 $stmtM     = $pdo->prepare("
@@ -57,14 +51,12 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/style.css">
 <style>
-/* Layout wireframe: esquerda novidades | direita pratos */
 .layout-outer {
     display: grid;
     grid-template-columns: 260px 1fr;
     min-height: calc(100vh - 71px - 64px);
 }
 
-/* ── Coluna esquerda ── */
 .col-esq {
     background: var(--branco);
     border-right: 1px solid var(--borda);
@@ -140,7 +132,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
     font-size: .82rem;
 }
 
-/* ── Coluna direita ── */
 .col-dir {
     padding: 30px 34px 44px;
     display: flex;
@@ -149,7 +140,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
     background: var(--creme);
 }
 
-/* Cabeçalho da seção pratos */
 .pratos-header {
     display: flex;
     align-items: flex-end;
@@ -171,14 +161,12 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
     font-weight: 500;
 }
 
-/* Grid 3 colunas */
 .pratos-grid {
     display: grid;
     grid-template-columns: repeat(3,1fr);
     gap: 18px;
 }
 
-/* Card do prato */
 .prato-card {
     background: var(--branco);
     border-radius: var(--r-lg);
@@ -242,7 +230,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
 
 .prato-kcal svg { width: 11px; height: 11px; fill: var(--c4); }
 
-/* Hover overlay */
 .prato-overlay {
     position: absolute;
     inset: 0;
@@ -282,7 +269,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
 }
 .prato-overlay a:hover { background: rgba(255,255,255,.28); color: #fff; }
 
-/* Vazio */
 .vazio-box {
     grid-column: 1/-1;
     background: var(--branco);
@@ -302,7 +288,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
 }
 .vazio-icon svg { width: 30px; height: 30px; fill: var(--c4); opacity: .5; }
 
-/* ── Calendário do aluno ── */
 .cal-aluno-wrap {
     background: var(--branco);
     border-radius: var(--r-lg);
@@ -390,7 +375,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
 }
 .cal-tag:hover { opacity: .8; color: #fff; }
 
-/* Tooltip */
 .tip {
     display: none;
     position: fixed;
@@ -408,7 +392,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
 }
 .tip.vis { display: block; }
 
-/* Relatos CTA para alunos */
 .relatos-cta {
     background: linear-gradient(135deg, var(--c1), var(--c2));
     border-radius: var(--r-lg);
@@ -464,7 +447,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
 <main style="padding:0">
 <div class="layout-outer">
 
-    <!-- ══ ESQUERDA: NOVIDADES ══ -->
     <aside class="col-esq">
         <div class="col-esq-top">
             <div class="col-esq-icon">
@@ -497,10 +479,8 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
         </div>
     </aside>
 
-    <!-- ══ DIREITA ══ -->
     <div class="col-dir">
 
-        <!-- Pratos da semana -->
         <section>
             <div class="pratos-header">
                 <div>
@@ -563,7 +543,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
             </div>
         </section>
 
-        <!-- Calendário informativo -->
         <section>
             <div class="sec-titulo">Calendário do Cardápio</div>
             <div class="sec-sub">Veja o que está programado para cada dia — clique no prato para mais detalhes</div>
@@ -582,7 +561,6 @@ foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
             </div>
         </section>
 
-        <!-- CTA relatos -->
         <div class="relatos-cta">
             <div class="relatos-cta-txt">
                 <h3>Tem algo a dizer?</h3>

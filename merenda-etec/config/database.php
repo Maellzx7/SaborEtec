@@ -1,14 +1,10 @@
 <?php
-// ============================================================
-// ARQUIVO: config/database.php
-// DESCRIÇÃO: Conexão PDO com o banco de dados MySQL
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
+
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'merenda_etec');
-define('DB_USER', 'root');       // <-- altere para seu usuário MySQL
-define('DB_PASS', '');           // <-- altere para sua senha MySQL
+define('DB_USER', 'root');       
+define('DB_PASS', '');           
 define('DB_CHARSET', 'utf8mb4');
 
 function conectar(): PDO {

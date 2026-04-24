@@ -1,10 +1,5 @@
 <?php
-// ============================================================
-// ARQUIVO: cardapio.php (raiz do projeto)
-// DESCRIÇÃO: CRUD de pratos + montagem do cardápio semanal
-// Acesso: supervisor e sub_supervisor
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
+
 
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/_layout.php';
@@ -15,9 +10,7 @@ $acao = $_GET['acao'] ?? 'listar';
 $erro = '';
 $sucesso = '';
 
-// =====================================================
-// PROCESSAR POST
-// =====================================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postAcao = $_POST['acao'] ?? '';
 
@@ -44,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$erro) {
                 if ($id > 0) {
-                    // Editar
+                    
                     $fotoSql = $foto ? ', foto = ?' : '';
                     $params  = [$nome, $descricao, $ingredientes, $modo_preparo, $calorias, $proteinas, $carboidratos, $gorduras];
                     if ($foto) $params[] = $foto;
@@ -53,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ->execute($params);
                     flash('sucesso', 'Prato atualizado com sucesso!');
                 } else {
-                    // Criar
+                    
                     $pdo->prepare("INSERT INTO pratos (nome,descricao,ingredientes,modo_preparo,calorias,proteinas,carboidratos,gorduras,foto) VALUES (?,?,?,?,?,?,?,?,?)")
                         ->execute([$nome,$descricao,$ingredientes,$modo_preparo,$calorias,$proteinas,$carboidratos,$gorduras,$foto]);
                     flash('sucesso', 'Prato cadastrado com sucesso!');
@@ -63,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // --- Excluir prato ---
+    
     if ($postAcao === 'excluir_prato') {
         $id = (int)($_POST['id'] ?? 0);
         $pdo->prepare("UPDATE pratos SET ativo=0 WHERE id=?")->execute([$id]);
@@ -71,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar(SITE_URL . '/cardapio.php');
     }
 
-    // --- Salvar cardápio semanal ---
     if ($postAcao === 'salvar_cardapio') {
         $semana = $_POST['semana'] ?? date('Y-m-d', strtotime('monday this week'));
         $dias   = ['segunda','terca','quarta','quinta','sexta'];
@@ -94,12 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// =====================================================
-// DADOS PARA TELAS
-// =====================================================
+
 $pratos = $pdo->query("SELECT * FROM pratos WHERE ativo=1 ORDER BY nome")->fetchAll();
 
-// Editar prato
+
 $pratoEdit = null;
 if ($acao === 'editar' && isset($_GET['id'])) {
     $s = $pdo->prepare("SELECT * FROM pratos WHERE id=? AND ativo=1");
@@ -108,7 +98,7 @@ if ($acao === 'editar' && isset($_GET['id'])) {
     if (!$pratoEdit) redirecionar(SITE_URL . '/cardapio.php');
 }
 
-// Cardápio da semana
+
 $semanaAtual   = $_GET['semana'] ?? date('Y-m-d', strtotime('monday this week'));
 $inicioSemana  = date('Y-m-d', strtotime($semanaAtual));
 $fimSemana     = date('Y-m-d', strtotime($semanaAtual . ' +4 days'));
@@ -151,14 +141,13 @@ function navUrl(string $a, string $extra = ''): string {
         <div class="flash" style="background:#8b0000"><?= escape($erro) ?></div>
     <?php endif; ?>
 
-    <!-- Tabs de navegação -->
     <div style="margin-bottom:8px">
         <h1 class="secao-titulo">Gerenciar Cardápio</h1>
     </div>
     <div class="tabs" style="max-width:500px;margin-bottom:28px">
         <button class="tab-btn <?= in_array($acao,['listar','editar']) ? 'ativo' : '' ?>"
                 onclick="location.href='<?= navUrl('listar') ?>'">
-            🍲 Pratos cadastrados
+             Pratos cadastrados
         </button>
         <button class="tab-btn <?= $acao === 'novo' ? 'ativo' : '' ?>"
                 onclick="location.href='<?= navUrl('novo') ?>'">
@@ -170,7 +159,6 @@ function navUrl(string $a, string $extra = ''): string {
         </button>
     </div>
 
-    <!-- ===================== LISTAR PRATOS ===================== -->
     <?php if ($acao === 'listar'): ?>
 
         <h2 style="font-family:var(--fonte-titulo);color:var(--c2);font-size:1.2rem;margin-bottom:16px">
@@ -220,7 +208,6 @@ function navUrl(string $a, string $extra = ''): string {
             </div>
         <?php endif; ?>
 
-    <!-- ===================== FORM PRATO ===================== -->
     <?php elseif ($acao === 'novo' || $acao === 'editar'): ?>
 
         <div class="card-form card-form-wide" style="margin:0">
@@ -300,7 +287,7 @@ function navUrl(string $a, string $extra = ''): string {
             </form>
         </div>
 
-    <!-- ===================== CARDÁPIO DA SEMANA ===================== -->
+    
     <?php elseif ($acao === 'semana'): ?>
 
         <div class="card-form card-form-wide" style="margin:0">
@@ -308,7 +295,6 @@ function navUrl(string $a, string $extra = ''): string {
                 📅 Montar cardápio da semana
             </h2>
 
-            <!-- Navegação de semanas -->
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
                 <?php
                 $semanaAnterior = date('Y-m-d', strtotime($inicioSemana . ' -7 days'));

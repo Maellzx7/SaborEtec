@@ -1,9 +1,5 @@
 <?php
-// ============================================================
-// ARQUIVO: login.php (raiz do projeto)
-// DESCRIÇÃO: Login + cadastro — Sabor Etec
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
+
 require_once __DIR__ . '/config/config.php';
 
 if (estaLogado()) {
@@ -84,7 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $aba === 'cadastro') {
     grid-template-columns: 1fr 480px;
 }
 
-/* Painel esquerdo decorativo */
 .login-painel-esq {
     background: linear-gradient(155deg, var(--c1) 0%, var(--c2) 50%, var(--c3) 100%);
     display: flex;
@@ -163,7 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $aba === 'cadastro') {
     z-index: 1;
 }
 
-/* Painel direito — formulário */
 .login-painel-dir {
     background: var(--creme);
     display: flex;
@@ -191,7 +185,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $aba === 'cadastro') {
     margin-bottom: 28px;
 }
 
-/* Tabs */
 .abas {
     display: flex;
     background: var(--creme2);
@@ -243,7 +236,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $aba === 'cadastro') {
 <body>
 <div class="login-page">
 
-    <!-- Painel esquerdo decorativo -->
     <div class="login-painel-esq">
         <img src="<?= SITE_URL ?>/assets/uploads/logo.png" alt="Sabor Etec" class="esq-logo">
         <div class="esq-nome">Sabor Etec</div>
@@ -252,7 +244,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $aba === 'cadastro') {
         <div class="esq-desc">Sistema de gestão da merenda escolar. Cardápio da semana, valores nutricionais e muito mais.</div>
     </div>
 
-    <!-- Painel direito — formulário -->
     <div class="login-painel-dir">
         <div class="login-form-box">
 
@@ -268,7 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $aba === 'cadastro') {
                 <button class="aba-btn <?= $aba==='cadastro' ?'ativa':'' ?>" onclick="trocarAba('cadastro',this)">Criar conta</button>
             </div>
 
-            <!-- Login -->
             <div class="aba-painel <?= $aba==='login'?'ativa':'' ?>" id="painel-login">
                 <form method="POST">
                     <input type="hidden" name="aba" value="login">
@@ -288,7 +278,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $aba === 'cadastro') {
                 </form>
             </div>
 
-            <!-- Cadastro -->
             <div class="aba-painel <?= $aba==='cadastro'?'ativa':'' ?>" id="painel-cadastro">
                 <form method="POST">
                     <input type="hidden" name="aba" value="cadastro">

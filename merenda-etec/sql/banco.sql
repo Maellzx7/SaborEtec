@@ -1,13 +1,8 @@
--- ============================================================
--- ARQUIVO: sql/banco.sql
--- DESCRIÇÃO: Estrutura completa do banco de dados
--- Sistema de Merenda - ETEC de Peruíbe
--- ============================================================
+
 
 CREATE DATABASE IF NOT EXISTS merenda_etec CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE merenda_etec;
 
--- Tabela de usuários (alunos, supervisores, sub-supervisores)
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -18,7 +13,6 @@ CREATE TABLE IF NOT EXISTS usuarios (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabela de pratos/refeições
 CREATE TABLE IF NOT EXISTS pratos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -34,7 +28,6 @@ CREATE TABLE IF NOT EXISTS pratos (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabela do cardápio semanal (segunda a sexta)
 CREATE TABLE IF NOT EXISTS cardapio_semana (
     id INT AUTO_INCREMENT PRIMARY KEY,
     dia_semana ENUM('segunda','terca','quarta','quinta','sexta') NOT NULL,
@@ -44,7 +37,6 @@ CREATE TABLE IF NOT EXISTS cardapio_semana (
     UNIQUE KEY unico_dia_data (dia_semana, data_referencia)
 );
 
--- Tabela de novidades/avisos
 CREATE TABLE IF NOT EXISTS novidades (
     id INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(150) NOT NULL,
@@ -56,23 +48,18 @@ CREATE TABLE IF NOT EXISTS novidades (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
 
--- Inserir supervisor padrão (senha: admin123)
 INSERT INTO usuarios (nome, email, senha, perfil) VALUES
 ('Supervisor ETEC', 'supervisor@etec.sp.gov.br', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'supervisor');
 
--- Inserir alguns pratos de exemplo
 INSERT INTO pratos (nome, descricao, ingredientes, modo_preparo, calorias, proteinas, carboidratos, gorduras, foto) VALUES
 ('Arroz com Feijão e Frango Grelhado', 'Prato clássico brasileiro nutritivo e saboroso', 'Arroz branco, feijão carioca, peito de frango, alho, cebola, sal, óleo', 'Cozinhe o arroz e o feijão separadamente. Tempere o frango com alho e sal e grelhe até dourar. Sirva junto.', 520, 35.5, 68.0, 8.2, NULL),
 ('Macarrão ao Molho de Tomate com Carne Moída', 'Macarrão nutritivo com molho caseiro', 'Macarrão espaguete, carne moída, tomates, alho, cebola, sal, azeite, manjericão', 'Cozinhe o macarrão al dente. Refogue a carne moída com alho e cebola. Adicione os tomates e deixe apurar. Misture tudo.', 480, 28.0, 72.0, 9.5, NULL),
 ('Sopa de Legumes com Frango', 'Sopa quente e nutritiva com legumes frescos', 'Frango, cenoura, batata, abobrinha, chuchu, tempero verde, sal', 'Cozinhe o frango e desfie. Reserve o caldo. Adicione os legumes cortados e cozinhe até ficarem macios.', 320, 22.0, 38.0, 5.0, NULL);
 
--- Inserir novidade de exemplo
 INSERT INTO novidades (titulo, mensagem, tipo, usuario_id) VALUES
 ('Bem-vindos ao sistema de merenda!', 'O cardápio desta semana está disponível. Qualquer dúvida, fale com o supervisor.', 'info', 1);
 
--- ============================================================
--- Tabela de relatos dos alunos (adicionada posteriormente)
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS relatos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,

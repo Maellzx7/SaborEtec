@@ -1,11 +1,4 @@
 <?php
-// ============================================================
-// ARQUIVO: usuarios.php (raiz do projeto)
-// DESCRIÇÃO: CRUD de usuários — alunos, supervisores e sub-supervisores
-// Adicionar sub-supervisor: supervisor e sub_supervisor podem fazer
-// Gerenciar todos os usuários: apenas supervisor pleno
-// Sistema de Merenda - ETEC de Peruíbe
-// ============================================================
 
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/_layout.php';
@@ -15,20 +8,16 @@ $pdo  = conectar();
 $acao = $_GET['acao'] ?? 'listar';
 $erro = '';
 
-// =====================================================
-// PROCESSAR POST
-// =====================================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postAcao = $_POST['acao'] ?? '';
 
-    // --- Criar usuário ---
     if ($postAcao === 'criar_usuario') {
         $nome   = trim($_POST['nome'] ?? '');
         $email  = trim($_POST['email'] ?? '');
         $senha  = $_POST['senha'] ?? '';
         $perfil = $_POST['perfil'] ?? 'aluno';
 
-        // Sub-supervisor só pode criar aluno ou sub_supervisor
         if (perfil() === 'sub_supervisor' && !in_array($perfil, ['aluno','sub_supervisor'])) {
             $erro = 'Você não tem permissão para criar esse tipo de usuário.';
         } elseif (!$nome || !$email || !$senha) {
@@ -36,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (strlen($senha) < 6) {
             $erro = 'A senha deve ter pelo menos 6 caracteres.';
         } else {
-            // Verificar email único
             $chk = $pdo->prepare("SELECT id FROM usuarios WHERE email=?");
             $chk->execute([$email]);
             if ($chk->fetch()) {
@@ -51,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // --- Editar usuário ---
     if ($postAcao === 'editar_usuario') {
         requerSupervisorPleno(); // apenas supervisor pleno edita
         $id     = (int)($_POST['id'] ?? 0);
@@ -83,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // --- Excluir usuário ---
     if ($postAcao === 'excluir_usuario') {
         requerSupervisorPleno();
         $id = (int)($_POST['id'] ?? 0);
@@ -97,9 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// =====================================================
-// DADOS PARA TELAS
-// =====================================================
+
 $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY perfil, nome")->fetchAll();
 
 $usuarioEdit = null;
@@ -135,7 +119,6 @@ if ($acao === 'editar' && isset($_GET['id'])) {
 
     <h1 class="secao-titulo">Gerenciar Usuários</h1>
 
-    <!-- Tabs -->
     <div class="tabs" style="max-width:420px;margin-bottom:28px">
         <button class="tab-btn <?= in_array($acao,['listar','editar']) ? 'ativo' : '' ?>"
                 onclick="location.href='<?= SITE_URL ?>/usuarios.php'">
@@ -147,7 +130,7 @@ if ($acao === 'editar' && isset($_GET['id'])) {
         </button>
     </div>
 
-    <!-- ===================== LISTAR ===================== -->
+ 
     <?php if ($acao === 'listar'): ?>
 
         <div class="tabela-wrap">
@@ -210,7 +193,6 @@ if ($acao === 'editar' && isset($_GET['id'])) {
             </table>
         </div>
 
-    <!-- ===================== CRIAR ===================== -->
     <?php elseif ($acao === 'novo'): ?>
 
         <div class="card-form" style="margin:0">
@@ -255,7 +237,6 @@ if ($acao === 'editar' && isset($_GET['id'])) {
             </form>
         </div>
 
-    <!-- ===================== EDITAR ===================== -->
     <?php elseif ($acao === 'editar' && $usuarioEdit): ?>
 
         <div class="card-form" style="margin:0">

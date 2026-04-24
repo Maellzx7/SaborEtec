@@ -1,9 +1,5 @@
 <?php
-// ============================================================
-// ARQUIVO: config/_layout.php
-// DESCRIÇÃO: Funções de header e footer reutilizáveis
-// Sistema Sabor Etec — ETEC de Peruíbe
-// ============================================================
+
 
 function renderHeader(string $paginaAtiva = '') {
     $url  = SITE_URL;
