@@ -1,24 +1,22 @@
 <?php
 // ============================================================
 // ARQUIVO: index.php (raiz do projeto)
-// DESCRIÇÃO: Página pública — novidades à esquerda,
-//            pratos da semana à direita + calendário do aluno
+// DESCRIÇÃO: Página pública — Sabor Etec
 // Sistema de Merenda - ETEC de Peruíbe
 // ============================================================
-
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/config/_layout.php';
 
 $pdo = conectar();
 
-// Semana atual: segunda a sexta
-$hoje         = new DateTime();
-$diaSemana    = (int)$hoje->format('N'); // 1=seg ... 7=dom
-$diasAteSeg   = $diaSemana === 7 ? 1 : ($diaSemana === 6 ? 2 : $diaSemana - 1);
-$inicioSemana = (clone $hoje)->modify("-{$diasAteSeg} days")->format('Y-m-d');
-$fimSemana    = (clone $hoje)->modify("-{$diasAteSeg} days")->modify('+4 days')->format('Y-m-d');
+// Semana atual
+$hoje       = new DateTime();
+$dow        = (int)$hoje->format('N');
+$diasAteSeg = ($dow === 7) ? 1 : (($dow === 6) ? 2 : $dow - 1);
+$inicioSem  = (clone $hoje)->modify("-{$diasAteSeg} days")->format('Y-m-d');
+$fimSem     = (clone $hoje)->modify("-{$diasAteSeg} days")->modify('+4 days')->format('Y-m-d');
 
-// Busca todos os pratos do cardápio desta semana
-$stmtCardapio = $pdo->prepare("
+$stmtC = $pdo->prepare("
     SELECT cs.dia_semana, cs.data_referencia,
            p.id, p.nome, p.descricao, p.calorias, p.foto
     FROM cardapio_semana cs
@@ -26,522 +24,555 @@ $stmtCardapio = $pdo->prepare("
     WHERE cs.data_referencia BETWEEN :ini AND :fim
     ORDER BY FIELD(cs.dia_semana,'segunda','terca','quarta','quinta','sexta')
 ");
-$stmtCardapio->execute([':ini' => $inicioSemana, ':fim' => $fimSemana]);
-$cardapio = $stmtCardapio->fetchAll(PDO::FETCH_ASSOC);
+$stmtC->execute([':ini' => $inicioSem, ':fim' => $fimSem]);
+$cardapio = $stmtC->fetchAll(PDO::FETCH_ASSOC);
 
-// Novidades ativas
 $novidades = $pdo->query("
     SELECT n.titulo, n.mensagem, n.tipo, n.criado_em, u.nome AS autor
-    FROM novidades n
-    JOIN usuarios u ON n.usuario_id = u.id
-    WHERE n.ativo = 1
-    ORDER BY n.criado_em DESC
-    LIMIT 8
+    FROM novidades n JOIN usuarios u ON n.usuario_id = u.id
+    WHERE n.ativo = 1 ORDER BY n.criado_em DESC LIMIT 8
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Cardápio do mês para o calendário do aluno
+// Cardápio do mês para o calendário
 $inicioMes = date('Y-m-01');
 $fimMes    = date('Y-m-t');
-$stmtMes   = $pdo->prepare("
+$stmtM     = $pdo->prepare("
     SELECT cs.data_referencia, p.nome AS prato_nome, p.id AS prato_id
-    FROM cardapio_semana cs
-    JOIN pratos p ON cs.prato_id = p.id AND p.ativo = 1
+    FROM cardapio_semana cs JOIN pratos p ON cs.prato_id = p.id AND p.ativo = 1
     WHERE cs.data_referencia BETWEEN ? AND ?
 ");
-$stmtMes->execute([$inicioMes, $fimMes]);
+$stmtM->execute([$inicioMes, $fimMes]);
 $cardapioMes = [];
-foreach ($stmtMes->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $cardapioMes[$row['data_referencia']] = $row;
+foreach ($stmtM->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $cardapioMes[$r['data_referencia']] = $r;
 }
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= SITE_NOME ?></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= SITE_URL ?>/assets/style.css">
-    <style>
-        body { background: var(--cinza-claro); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sabor Etec — Cardápio da Semana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="<?= SITE_URL ?>/assets/style.css">
+<style>
+/* Layout wireframe: esquerda novidades | direita pratos */
+.layout-outer {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 71px - 64px);
+}
 
-        /* ── Layout principal (wireframe) ── */
-        .layout-outer {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            min-height: calc(100vh - 64px - 56px);
-        }
+/* ── Coluna esquerda ── */
+.col-esq {
+    background: var(--branco);
+    border-right: 1px solid var(--borda);
+    display: flex;
+    flex-direction: column;
+}
 
-        /* ── Coluna esquerda: Novidades ── */
-        .col-esq {
-            background: #fff;
-            border-right: 2px solid var(--cinza-medio);
-            display: flex;
-            flex-direction: column;
-        }
+.col-esq-top {
+    background: linear-gradient(135deg, var(--c1), var(--c2));
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
-        .col-esq-header {
-            background: var(--c1);
-            color: #fff;
-            padding: 13px 16px;
-            font-size: .7rem;
-            font-weight: 700;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-        }
+.col-esq-top h2 {
+    font-family: var(--titulo);
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: .02em;
+}
 
-        .nov-item {
-            padding: 13px 15px;
-            border-bottom: 1px solid var(--cinza-claro);
-            transition: background .15s;
-        }
-        .nov-item:hover { background: #fdf3f3; }
+.col-esq-icon {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,.15);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
 
-        .nov-tipo {
-            font-size: .65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .09em;
-            margin-bottom: 3px;
-        }
-        .t-mudanca { color: var(--c3); }
-        .t-aviso   { color: #a06000; }
-        .t-info    { color: #1a6a3a; }
+.col-esq-icon svg { width: 14px; height: 14px; fill: rgba(255,255,255,.9); }
 
-        .nov-titulo {
-            font-size: .82rem;
-            font-weight: 600;
-            color: var(--c2);
-            line-height: 1.3;
-            margin-bottom: 4px;
-        }
+.novidades-lista { flex: 1; overflow-y: auto; }
 
-        .nov-texto {
-            font-size: .75rem;
-            color: #7a5050;
-            line-height: 1.5;
-        }
+.nov-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--creme2);
+    transition: background .15s;
+    cursor: default;
+}
+.nov-item:hover { background: var(--creme2); }
 
-        .nov-data {
-            font-size: .68rem;
-            color: #b09090;
-            margin-top: 5px;
-        }
+.nov-tipo {
+    font-size: .64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 4px;
+}
 
-        .sem-nov {
-            padding: 28px 14px;
-            text-align: center;
-            color: #c0a0a0;
-            font-size: .8rem;
-        }
+.t-mudanca { color: var(--c3); }
+.t-aviso   { color: #9c6500; }
+.t-info    { color: #1a6a3a; }
 
-        /* ── Coluna direita ── */
-        .col-dir {
-            padding: 28px 32px 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 32px;
-        }
+.nov-titulo {
+    font-family: var(--titulo);
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--c2);
+    line-height: 1.3;
+    margin-bottom: 4px;
+}
 
-        /* ── Título da seção ── */
-        .sec-titulo {
-            font-family: var(--fonte-titulo);
-            font-size: 1.4rem;
-            color: var(--c2);
-            font-weight: 700;
-            margin-bottom: 3px;
-        }
-        .sec-sub {
-            font-size: .8rem;
-            color: #9a7070;
-            margin-bottom: 18px;
-        }
+.nov-texto { font-size: .76rem; color: var(--texto2); line-height: 1.5; }
+.nov-data  { font-size: .67rem; color: #b09090; margin-top: 6px; }
 
-        /* ── Grid 3 colunas ── */
-        .pratos-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px;
-        }
+.sem-nov {
+    padding: 32px 16px;
+    text-align: center;
+    color: #c0a0a0;
+    font-size: .82rem;
+}
 
-        /* ── Card do prato ── */
-        .prato-card {
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 2px 10px rgba(56,5,14,.09);
-            overflow: hidden;
-            border: 1.5px solid transparent;
-            transition: transform .22s, box-shadow .22s, border-color .22s;
-            cursor: pointer;
-            position: relative;
-        }
-        .prato-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(56,5,14,.18);
-            border-color: var(--c4);
-        }
-        .prato-card:hover .prato-overlay { opacity: 1; }
+/* ── Coluna direita ── */
+.col-dir {
+    padding: 30px 34px 44px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    background: var(--creme);
+}
 
-        .prato-thumb {
-            width: 100%;
-            height: 140px;
-            object-fit: cover;
-            display: block;
-        }
-        .prato-placeholder {
-            width: 100%;
-            height: 140px;
-            background: linear-gradient(135deg, var(--c2), var(--c4));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.4rem;
-            color: rgba(255,255,255,.3);
-        }
+/* Cabeçalho da seção pratos */
+.pratos-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
 
-        .prato-body {
-            padding: 12px 14px 14px;
-        }
-        .prato-dia {
-            font-size: .66rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .1em;
-            color: var(--c4);
-            margin-bottom: 2px;
-        }
-        .prato-nome {
-            font-family: var(--fonte-titulo);
-            font-size: .95rem;
-            color: var(--c2);
-            font-weight: 600;
-            line-height: 1.3;
-        }
-        .prato-kcal {
-            font-size: .72rem;
-            color: #9a7070;
-            margin-top: 5px;
-        }
+.pratos-header .sec-titulo { margin-bottom: 0; }
 
-        /* hover overlay */
-        .prato-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(155deg,rgba(56,5,14,.95),rgba(128,14,19,.9));
-            opacity: 0;
-            transition: opacity .24s;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 18px;
-            text-align: center;
-        }
-        .prato-overlay h4 {
-            font-family: var(--fonte-titulo);
-            font-size: .95rem;
-            color: #fff;
-            margin-bottom: 7px;
-            line-height: 1.3;
-        }
-        .prato-overlay p {
-            font-size: .74rem;
-            color: rgba(255,255,255,.82);
-            line-height: 1.55;
-            margin-bottom: 12px;
-        }
-        .prato-overlay a {
-            background: var(--c4);
-            color: #fff;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: .76rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background .15s;
-        }
-        .prato-overlay a:hover { background: #fff; color: var(--c2); }
+.semana-badge {
+    background: var(--branco);
+    border: 1px solid var(--borda);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: .78rem;
+    color: var(--texto2);
+    font-weight: 500;
+}
 
-        /* ── Vazio ── */
-        .vazio-box {
-            grid-column: 1 / -1;
-            background: #fff;
-            border-radius: 14px;
-            padding: 48px 24px;
-            text-align: center;
-            color: #9a7070;
-            box-shadow: 0 2px 8px rgba(56,5,14,.07);
-        }
+/* Grid 3 colunas */
+.pratos-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 18px;
+}
 
-        /* ── Calendário do aluno ── */
-        .cal-aluno-wrap {
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 2px 10px rgba(56,5,14,.08);
-            overflow: hidden;
-        }
+/* Card do prato */
+.prato-card {
+    background: var(--branco);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    border: 1px solid var(--borda);
+    box-shadow: var(--sombra-s);
+    transition: var(--trans);
+    cursor: pointer;
+    position: relative;
+    group: true;
+}
 
-        .cal-aluno-header {
-            background: var(--c2);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 20px;
-        }
+.prato-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--sombra-m);
+    border-color: var(--c4);
+}
 
-        .cal-aluno-header h3 {
-            font-family: var(--fonte-titulo);
-            font-size: 1rem;
-            font-weight: 600;
-        }
+.prato-card:hover .prato-overlay { opacity: 1; }
 
-        .cal-nav {
-            background: rgba(255,255,255,.15);
-            border: 1px solid rgba(255,255,255,.25);
-            color: #fff;
-            width: 30px; height: 30px;
-            border-radius: 7px;
-            cursor: pointer;
-            font-size: .95rem;
-            transition: background .15s;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .cal-nav:hover { background: rgba(255,255,255,.28); }
+.prato-thumb {
+    width: 100%; height: 148px;
+    object-fit: cover; display: block;
+}
 
-        .cal-dias-sem {
-            display: grid;
-            grid-template-columns: repeat(7,1fr);
-            background: var(--c1);
-        }
-        .cal-dias-sem span {
-            text-align: center;
-            padding: 7px 2px;
-            font-size: .66rem;
-            font-weight: 700;
-            letter-spacing: .07em;
-            text-transform: uppercase;
-            color: rgba(255,255,255,.65);
-        }
+.prato-placeholder {
+    width: 100%; height: 148px;
+    background: linear-gradient(135deg, var(--c2) 0%, var(--c4) 100%);
+    display: flex; align-items: center; justify-content: center;
+}
 
-        .cal-aluno-grid {
-            display: grid;
-            grid-template-columns: repeat(7,1fr);
-        }
+.prato-placeholder svg { width: 44px; height: 44px; fill: rgba(255,255,255,.25); }
 
-        .cal-cel {
-            min-height: 68px;
-            border-right: 1px solid var(--cinza-claro);
-            border-bottom: 1px solid var(--cinza-claro);
-            padding: 6px 7px;
-        }
-        .cal-cel:nth-child(7n) { border-right: none; }
-        .cal-cel.vazio   { background: #fafafa; }
-        .cal-cel.fds     { background: #f9f4f4; }
-        .cal-cel.hoje-d  { background: #fff8f8; }
+.prato-body { padding: 13px 15px 16px; }
 
-        .cal-num {
-            font-size: .78rem;
-            font-weight: 600;
-            color: var(--cinza-texto);
-            line-height: 1;
-            margin-bottom: 4px;
-        }
-        .cal-cel.hoje-d .cal-num {
-            background: var(--c3);
-            color: #fff;
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .72rem;
-        }
-        .cal-cel.fds .cal-num  { color: #cca0a0; }
-        .cal-cel.vazio .cal-num { color: #ddd; }
+.prato-dia {
+    font-size: .65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--c4);
+    margin-bottom: 3px;
+}
 
-        .cal-prato-tag {
-            background: var(--c4);
-            color: #fff;
-            font-size: .6rem;
-            font-weight: 600;
-            padding: 2px 5px;
-            border-radius: 4px;
-            line-height: 1.35;
-            display: block;
-            cursor: pointer;
-            transition: background .15s;
-        }
-        .cal-prato-tag:hover { background: var(--c2); }
+.prato-nome {
+    font-family: var(--titulo);
+    font-size: 1.05rem;
+    color: var(--c2);
+    font-weight: 600;
+    line-height: 1.3;
+}
 
-        /* ── Tooltip popup ── */
-        .tooltip-pop {
-            display: none;
-            position: fixed;
-            background: var(--c1);
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: .8rem;
-            max-width: 220px;
-            z-index: 300;
-            box-shadow: 0 8px 24px rgba(0,0,0,.3);
-            pointer-events: none;
-        }
-        .tooltip-pop.vis { display: block; }
+.prato-kcal {
+    font-size: .72rem;
+    color: var(--texto2);
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
 
-        @media (max-width: 860px) {
-            .layout-outer { grid-template-columns: 1fr; }
-            .col-esq { border-right: none; border-bottom: 2px solid var(--cinza-medio); max-height: 240px; overflow-y: auto; }
-            .pratos-grid { grid-template-columns: repeat(2,1fr); }
-            .col-dir { padding: 20px 16px 32px; }
-        }
-        @media (max-width: 540px) {
-            .pratos-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+.prato-kcal svg { width: 11px; height: 11px; fill: var(--c4); }
+
+/* Hover overlay */
+.prato-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(155deg,rgba(56,5,14,.96),rgba(129,14,19,.92));
+    opacity: 0;
+    transition: opacity .26s;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 20px; text-align: center;
+}
+
+.prato-overlay h4 {
+    font-family: var(--titulo);
+    font-size: 1.1rem;
+    color: #fff;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.prato-overlay p {
+    font-size: .76rem;
+    color: rgba(255,255,255,.8);
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+.prato-overlay a {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.35);
+    color: #fff;
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: .76rem;
+    font-weight: 600;
+    transition: var(--trans);
+    text-decoration: none;
+}
+.prato-overlay a:hover { background: rgba(255,255,255,.28); color: #fff; }
+
+/* Vazio */
+.vazio-box {
+    grid-column: 1/-1;
+    background: var(--branco);
+    border: 1px dashed var(--borda);
+    border-radius: var(--r-lg);
+    padding: 52px 24px;
+    text-align: center;
+    color: var(--texto2);
+}
+
+.vazio-icon {
+    width: 64px; height: 64px;
+    background: var(--creme2);
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+}
+.vazio-icon svg { width: 30px; height: 30px; fill: var(--c4); opacity: .5; }
+
+/* ── Calendário do aluno ── */
+.cal-aluno-wrap {
+    background: var(--branco);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sombra-s);
+    overflow: hidden;
+    border: 1px solid var(--borda);
+}
+
+.cal-header-aluno {
+    background: linear-gradient(135deg, var(--c2), var(--c3));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+}
+
+.cal-header-aluno h3 {
+    font-family: var(--titulo);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.cal-dias-sem {
+    display: grid;
+    grid-template-columns: repeat(7,1fr);
+    background: var(--c1);
+}
+
+.cal-dias-sem span {
+    text-align: center;
+    padding: 8px 2px;
+    font-size: .64rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.55);
+}
+
+.cal-aluno-grid { display: grid; grid-template-columns: repeat(7,1fr); }
+
+.cal-cel {
+    min-height: 64px;
+    border-right: 1px solid var(--creme2);
+    border-bottom: 1px solid var(--creme2);
+    padding: 6px 7px;
+}
+.cal-cel:nth-child(7n) { border-right: none; }
+.cal-cel.vazio   { background: #fafafa; }
+.cal-cel.fds     { background: var(--creme2); }
+.cal-cel.hoje-d  { background: #fff5f5; }
+
+.cal-num {
+    font-size: .76rem;
+    font-weight: 600;
+    color: var(--texto);
+    line-height: 1;
+    margin-bottom: 3px;
+}
+
+.cal-cel.hoje-d .cal-num {
+    background: var(--c3);
+    color: #fff;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem;
+}
+
+.cal-cel.fds .cal-num  { color: #c0a0a0; }
+.cal-cel.vazio .cal-num { color: #ddd; }
+
+.cal-tag {
+    background: linear-gradient(135deg, var(--c3), var(--c4));
+    color: #fff;
+    font-size: .58rem;
+    font-weight: 600;
+    padding: 2px 5px;
+    border-radius: 4px;
+    line-height: 1.4;
+    display: block;
+    cursor: pointer;
+    transition: opacity .15s;
+    text-decoration: none;
+}
+.cal-tag:hover { opacity: .8; color: #fff; }
+
+/* Tooltip */
+.tip {
+    display: none;
+    position: fixed;
+    background: var(--c1);
+    color: #fff;
+    padding: 9px 13px;
+    border-radius: 10px;
+    font-size: .78rem;
+    max-width: 200px;
+    z-index: 400;
+    box-shadow: var(--sombra-m);
+    pointer-events: none;
+    font-family: var(--titulo);
+    font-size: .9rem;
+}
+.tip.vis { display: block; }
+
+/* Relatos CTA para alunos */
+.relatos-cta {
+    background: linear-gradient(135deg, var(--c1), var(--c2));
+    border-radius: var(--r-lg);
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    box-shadow: var(--sombra-m);
+}
+
+.relatos-cta-txt h3 {
+    font-family: var(--titulo);
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 5px;
+}
+.relatos-cta-txt p { font-size: .84rem; color: rgba(255,255,255,.7); }
+
+.btn-cta {
+    background: rgba(255,255,255,.12);
+    border: 1.5px solid rgba(255,255,255,.35);
+    color: #fff;
+    padding: 12px 26px;
+    border-radius: var(--r-md);
+    font-size: .9rem;
+    font-weight: 600;
+    font-family: var(--corpo);
+    cursor: pointer;
+    transition: var(--trans);
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-cta:hover { background: rgba(255,255,255,.22); color: #fff; }
+
+@media (max-width: 900px) {
+    .layout-outer { grid-template-columns: 1fr; }
+    .col-esq { border-right: none; border-bottom: 1px solid var(--borda); max-height: 220px; overflow-y: auto; }
+    .pratos-grid { grid-template-columns: repeat(2,1fr); }
+    .col-dir { padding: 22px 16px 36px; }
+}
+@media (max-width: 540px) {
+    .pratos-grid { grid-template-columns: 1fr; }
+    .relatos-cta { flex-direction: column; }
+}
+</style>
 </head>
 <body>
-
-<header>
-    <nav class="navbar">
-        <a href="<?= SITE_URL ?>/index.php" class="logo">
-            <div class="logo-icon">🍽️</div>
-            <?= SITE_NOME ?>
-        </a>
-        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
-            <span></span><span></span><span></span>
-        </button>
-        <ul class="nav-links" id="navMenu">
-            <li><a href="<?= SITE_URL ?>/index.php" class="ativo">Cardápio</a></li>
-            <?php if (estaLogado()): ?>
-                <?php if (perfil() !== 'aluno'): ?>
-                    <li><a href="<?= SITE_URL ?>/dashboard.php">Painel</a></li>
-                    <li><a href="<?= SITE_URL ?>/cardapio.php">Gerenciar Cardápio</a></li>
-                    <li><a href="<?= SITE_URL ?>/usuarios.php">Usuários</a></li>
-                <?php endif; ?>
-                <li><a href="<?= SITE_URL ?>/logout.php">Sair</a></li>
-                <li><span class="nav-user">👤 <?= escape($_SESSION['nome']) ?></span></li>
-            <?php else: ?>
-                <li><a href="<?= SITE_URL ?>/login.php">Entrar</a></li>
-            <?php endif; ?>
-        </ul>
-    </nav>
-</header>
+<?php renderHeader('index.php'); ?>
 
 <main style="padding:0">
 <div class="layout-outer">
 
     <!-- ══ ESQUERDA: NOVIDADES ══ -->
     <aside class="col-esq">
-        <div class="col-esq-header">📢 Novidades</div>
-
-        <?php if (empty($novidades)): ?>
-            <div class="sem-nov">
-                <div style="font-size:1.6rem;margin-bottom:6px">📋</div>
-                Nenhuma novidade
+        <div class="col-esq-top">
+            <div class="col-esq-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
             </div>
-        <?php else: ?>
-            <?php foreach ($novidades as $n): ?>
-                <?php
-                $tc = 't-' . $n['tipo'];
-                $tl = match($n['tipo']) {
-                    'mudanca' => '🔄 Mudança', 'aviso' => '⚠️ Aviso', default => '📢 Info'
-                };
+            <h2>Novidades</h2>
+        </div>
+
+        <div class="novidades-lista">
+            <?php if (empty($novidades)): ?>
+                <div class="sem-nov">
+                    <svg viewBox="0 0 24 24" style="width:36px;height:36px;fill:var(--borda);margin:0 auto 8px"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/></svg>
+                    <p>Nenhuma novidade</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($novidades as $n):
+                    $tc = 't-' . $n['tipo'];
+                    $tl = match($n['tipo']) {
+                        'mudanca' => '↺ Mudança', 'aviso' => '! Aviso', default => '» Info'
+                    };
                 ?>
                 <div class="nov-item">
                     <div class="nov-tipo <?= $tc ?>"><?= $tl ?></div>
                     <div class="nov-titulo"><?= escape($n['titulo']) ?></div>
-                    <div class="nov-texto"><?= escape(mb_substr($n['mensagem'],0,95)) ?><?= mb_strlen($n['mensagem'])>95?'…':'' ?></div>
+                    <div class="nov-texto"><?= escape(mb_substr($n['mensagem'],0,90)) ?><?= mb_strlen($n['mensagem'])>90?'…':'' ?></div>
                     <div class="nov-data"><?= date('d/m/Y', strtotime($n['criado_em'])) ?> · <?= escape($n['autor']) ?></div>
                 </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
     </aside>
 
-    <!-- ══ DIREITA: PRATOS + CALENDÁRIO ══ -->
+    <!-- ══ DIREITA ══ -->
     <div class="col-dir">
 
         <!-- Pratos da semana -->
         <section>
-            <div class="sec-titulo">Pratos da Semana</div>
-            <div class="sec-sub">
-                <?= date('d/m', strtotime($inicioSemana)) ?> a <?= date('d/m/Y', strtotime($fimSemana)) ?>
-                · Passe o mouse para ver detalhes
+            <div class="pratos-header">
+                <div>
+                    <div class="sec-titulo">Pratos da Semana</div>
+                    <div class="sec-sub" style="margin-bottom:0">Passe o mouse sobre o prato para ver detalhes</div>
+                </div>
+                <span class="semana-badge"><?= date('d/m', strtotime($inicioSem)) ?> – <?= date('d/m/Y', strtotime($fimSem)) ?></span>
             </div>
 
             <div class="pratos-grid">
-                <?php if (empty($cardapio)): ?>
-                    <div class="vazio-box">
-                        <div style="font-size:2.5rem;margin-bottom:12px">🍽️</div>
-                        <p style="font-size:.95rem;font-weight:600;color:var(--c2);margin-bottom:6px">
-                            Cardápio não cadastrado para esta semana
-                        </p>
-                        <p style="font-size:.84rem">O supervisor ainda não montou o cardápio.</p>
-                        <?php if (!estaLogado()): ?>
-                            <a href="<?= SITE_URL ?>/login.php" class="btn btn-primario"
-                               style="display:inline-flex;margin-top:16px;max-width:240px">
-                                Entrar como supervisor
-                            </a>
-                        <?php else: ?>
-                            <a href="<?= SITE_URL ?>/dashboard.php" class="btn btn-primario"
-                               style="display:inline-flex;margin-top:16px;max-width:240px">
-                                Ir ao painel
-                            </a>
+            <?php if (empty($cardapio)): ?>
+                <div class="vazio-box">
+                    <div class="vazio-icon">
+                        <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
+                    </div>
+                    <p style="font-family:var(--titulo);font-size:1.2rem;color:var(--c2);margin-bottom:6px">Cardápio não cadastrado</p>
+                    <p style="font-size:.84rem">O supervisor ainda não montou o cardápio desta semana.</p>
+                    <?php if (!estaLogado()): ?>
+                        <a href="<?= SITE_URL ?>/login.php" class="btn btn-primario" style="display:inline-flex;margin-top:18px;max-width:220px">Entrar como supervisor</a>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <?php foreach ($cardapio as $item):
+                    $fotoPath = UPLOAD_DIR . ($item['foto'] ?? '');
+                    $temFoto  = !empty($item['foto']) && is_file($fotoPath);
+                    $fotoUrl  = UPLOAD_URL . rawurlencode($item['foto'] ?? '');
+                ?>
+                <article class="prato-card" onclick="location.href='<?= SITE_URL ?>/prato.php?id=<?= (int)$item['id'] ?>'">
+                    <?php if ($temFoto): ?>
+                        <img src="<?= $fotoUrl ?>" alt="<?= escape($item['nome']) ?>" class="prato-thumb"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="prato-placeholder" style="display:none">
+                            <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
+                        </div>
+                    <?php else: ?>
+                        <div class="prato-placeholder">
+                            <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="prato-body">
+                        <div class="prato-dia"><?= diaSemanaLabel($item['dia_semana']) ?></div>
+                        <div class="prato-nome"><?= escape($item['nome']) ?></div>
+                        <?php if ($item['calorias']): ?>
+                        <div class="prato-kcal">
+                            <svg viewBox="0 0 24 24"><path d="M13.5 0.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/></svg>
+                            <?= (int)$item['calorias'] ?> kcal
+                        </div>
                         <?php endif; ?>
                     </div>
-                <?php else: ?>
-                    <?php foreach ($cardapio as $item): ?>
-                        <article class="prato-card"
-                                 onclick="location.href='<?= SITE_URL ?>/prato.php?id=<?= (int)$item['id'] ?>'">
 
-                            <?php
-                            // Monta caminho real da imagem para verificar existência
-                            $fotoNome = $item['foto'] ?? '';
-                            $fotoPath = UPLOAD_DIR . $fotoNome;
-                            $fotoUrl  = UPLOAD_URL . rawurlencode($fotoNome);
-                            $temFoto  = $fotoNome && is_file($fotoPath);
-                            ?>
-
-                            <?php if ($temFoto): ?>
-                                <img src="<?= $fotoUrl ?>"
-                                     alt="<?= escape($item['nome']) ?>"
-                                     class="prato-thumb"
-                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                                <div class="prato-placeholder" style="display:none">🍲</div>
-                            <?php else: ?>
-                                <div class="prato-placeholder">🍲</div>
-                            <?php endif; ?>
-
-                            <div class="prato-body">
-                                <div class="prato-dia"><?= diaSemanaLabel($item['dia_semana']) ?></div>
-                                <div class="prato-nome"><?= escape($item['nome']) ?></div>
-                                <?php if ($item['calorias']): ?>
-                                    <div class="prato-kcal">🔥 <?= (int)$item['calorias'] ?> kcal</div>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="prato-overlay">
-                                <h4><?= escape($item['nome']) ?></h4>
-                                <p><?= escape(mb_substr($item['descricao'] ?? 'Clique para ver ingredientes e valores nutricionais.', 0, 100)) ?>…</p>
-                                <a href="<?= SITE_URL ?>/prato.php?id=<?= (int)$item['id'] ?>"
-                                   onclick="event.stopPropagation()">Ver detalhes →</a>
-                            </div>
-                        </article>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                    <div class="prato-overlay">
+                        <h4><?= escape($item['nome']) ?></h4>
+                        <p><?= escape(mb_substr($item['descricao'] ?? 'Clique para ver ingredientes e valores nutricionais completos.', 0, 100)) ?>…</p>
+                        <a href="<?= SITE_URL ?>/prato.php?id=<?= (int)$item['id'] ?>" onclick="event.stopPropagation()">Ver detalhes</a>
+                    </div>
+                </article>
+                <?php endforeach; ?>
+            <?php endif; ?>
             </div>
         </section>
 
-        <!-- Calendário informativo do aluno -->
+        <!-- Calendário informativo -->
         <section>
             <div class="sec-titulo">Calendário do Cardápio</div>
-            <div class="sec-sub">Veja o que está programado para cada dia do mês</div>
+            <div class="sec-sub">Veja o que está programado para cada dia — clique no prato para mais detalhes</div>
 
             <div class="cal-aluno-wrap">
-                <div class="cal-aluno-header">
-                    <button class="cal-nav" id="btnAntes">&#8592;</button>
+                <div class="cal-header-aluno">
+                    <button class="cal-nav-btn" id="btnAntes">&#8592;</button>
                     <h3 id="calTitulo"></h3>
-                    <button class="cal-nav" id="btnDepois">&#8594;</button>
+                    <button class="cal-nav-btn" id="btnDepois">&#8594;</button>
                 </div>
                 <div class="cal-dias-sem">
                     <span>Dom</span><span>Seg</span><span>Ter</span>
@@ -551,52 +582,51 @@ foreach ($stmtMes->fetchAll(PDO::FETCH_ASSOC) as $row) {
             </div>
         </section>
 
+        <!-- CTA relatos -->
+        <div class="relatos-cta">
+            <div class="relatos-cta-txt">
+                <h3>Tem algo a dizer?</h3>
+                <p>Envie sua sugestão, restrição alimentar, elogio ou reclamação.<br>Sua voz melhora nossa merenda!</p>
+            </div>
+            <a href="<?= SITE_URL ?>/relatos.php" class="btn-cta">Enviar relato</a>
+        </div>
+
     </div>
 </div>
 </main>
 
-<footer>
-    <strong><?= SITE_NOME ?></strong> · ETEC de Peruíbe · Sistema de Gestão da Merenda Escolar
-</footer>
-
-<!-- Tooltip flutuante -->
-<div class="tooltip-pop" id="tooltip"></div>
+<div class="tip" id="tip"></div>
+<?php renderFooter(); ?>
 
 <script>
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-// Cardápio do mês atual vindo do PHP
-let cardapioAtual = <?= json_encode($cardapioMes) ?>;
-
-let anoVis = <?= date('Y') ?>;
-let mesVis = <?= date('n') - 1 ?>; // 0-indexed
+let cardapioMes = <?= json_encode($cardapioMes) ?>;
+let anoV = <?= date('Y') ?>, mesV = <?= date('n') - 1 ?>;
 
 function pad(n){ return String(n).padStart(2,'0'); }
-function dataStr(a,m,d){ return `${a}-${pad(m+1)}-${pad(d)}`; }
+function ds(a,m,d){ return `${a}-${pad(m+1)}-${pad(d)}`; }
 
 function renderCal() {
-    document.getElementById('calTitulo').textContent = `${MESES[mesVis]} ${anoVis}`;
-    const grid = document.getElementById('calGrid');
+    document.getElementById('calTitulo').textContent = `${MESES[mesV]} ${anoV}`;
+    const grid  = document.getElementById('calGrid');
     grid.innerHTML = '';
+    const hoje  = new Date();
+    const prim  = new Date(anoV, mesV, 1).getDay();
+    const total = new Date(anoV, mesV+1, 0).getDate();
 
-    const hoje      = new Date();
-    const primDia   = new Date(anoVis, mesVis, 1).getDay(); // 0=dom
-    const totalDias = new Date(anoVis, mesVis + 1, 0).getDate();
-
-    // Células vazias
-    for (let i = 0; i < primDia; i++) {
+    for (let i = 0; i < prim; i++) {
         const c = document.createElement('div');
         c.className = 'cal-cel vazio';
         c.innerHTML = '<div class="cal-num"></div>';
         grid.appendChild(c);
     }
 
-    for (let d = 1; d <= totalDias; d++) {
-        const ds     = dataStr(anoVis, mesVis, d);
-        const dow    = new Date(anoVis, mesVis, d).getDay();
-        const isHoje = d === hoje.getDate() && mesVis === hoje.getMonth() && anoVis === hoje.getFullYear();
-        const isFds  = dow === 0 || dow === 6;
+    for (let d = 1; d <= total; d++) {
+        const dateStr = ds(anoV, mesV, d);
+        const dow     = new Date(anoV, mesV, d).getDay();
+        const isHoje  = d === hoje.getDate() && mesV === hoje.getMonth() && anoV === hoje.getFullYear();
+        const isFds   = dow === 0 || dow === 6;
 
         const cel = document.createElement('div');
         cel.className = 'cal-cel' + (isFds?' fds':'') + (isHoje?' hoje-d':'');
@@ -606,69 +636,45 @@ function renderCal() {
         num.textContent = d;
         cel.appendChild(num);
 
-        // Se tem prato cadastrado para este dia
-        if (cardapioAtual[ds]) {
-            const nome  = cardapioAtual[ds].prato_nome;
-            const pid   = cardapioAtual[ds].prato_id;
-            const tag   = document.createElement('a');
-            tag.className = 'cal-prato-tag';
-            tag.href      = `<?= SITE_URL ?>/prato.php?id=${pid}`;
-            tag.textContent = nome.length > 18 ? nome.substring(0,18)+'…' : nome;
+        if (!isFds && cardapioMes[dateStr]) {
+            const nome = cardapioMes[dateStr].prato_nome;
+            const pid  = cardapioMes[dateStr].prato_id;
+            const tag  = document.createElement('a');
+            tag.className   = 'cal-tag';
+            tag.href        = `<?= SITE_URL ?>/prato.php?id=${pid}`;
+            tag.textContent = nome.length > 16 ? nome.substring(0,16)+'…' : nome;
             tag.title       = nome;
-            // Tooltip
-            tag.addEventListener('mouseenter', e => mostrarTooltip(e, nome));
-            tag.addEventListener('mousemove',  e => moverTooltip(e));
-            tag.addEventListener('mouseleave', esconderTooltip);
+            tag.addEventListener('mouseenter', e => { const t=document.getElementById('tip'); t.textContent=nome; t.classList.add('vis'); moveTip(e); });
+            tag.addEventListener('mousemove',  moveTip);
+            tag.addEventListener('mouseleave', () => document.getElementById('tip').classList.remove('vis'));
             cel.appendChild(tag);
         }
-
         grid.appendChild(cel);
     }
 }
 
-function mostrarTooltip(e, texto) {
-    const t = document.getElementById('tooltip');
-    t.textContent = texto;
-    t.classList.add('vis');
-    moverTooltip(e);
-}
-function moverTooltip(e) {
-    const t = document.getElementById('tooltip');
-    t.style.left = (e.clientX + 12) + 'px';
-    t.style.top  = (e.clientY - 36) + 'px';
-}
-function esconderTooltip() {
-    document.getElementById('tooltip').classList.remove('vis');
+function moveTip(e) {
+    const t = document.getElementById('tip');
+    t.style.left = (e.clientX+12)+'px';
+    t.style.top  = (e.clientY-38)+'px';
 }
 
-// Navegação entre meses
 document.getElementById('btnAntes').onclick = () => {
-    mesVis--;
-    if (mesVis < 0) { mesVis = 11; anoVis--; }
-    carregarMes();
+    mesV--; if (mesV<0){ mesV=11; anoV--; } carregarMes();
 };
 document.getElementById('btnDepois').onclick = () => {
-    mesVis++;
-    if (mesVis > 11) { mesVis = 0; anoVis++; }
-    carregarMes();
+    mesV++; if (mesV>11){ mesV=0; anoV++; } carregarMes();
 };
 
 function carregarMes() {
-    const ini = dataStr(anoVis, mesVis, 1);
-    const tot = new Date(anoVis, mesVis + 1, 0).getDate();
-    const fim = dataStr(anoVis, mesVis, tot);
-
+    const ini = ds(anoV, mesV, 1);
+    const fim = ds(anoV, mesV, new Date(anoV, mesV+1, 0).getDate());
     fetch(`<?= SITE_URL ?>/ajax_cardapio.php?inicio=${ini}&fim=${fim}`)
-        .then(r => r.json())
-        .then(data => { cardapioAtual = data; renderCal(); })
-        .catch(() => { cardapioAtual = {}; renderCal(); });
+        .then(r=>r.json()).then(d=>{ cardapioMes=d; renderCal(); })
+        .catch(()=>{ cardapioMes={}; renderCal(); });
 }
 
 renderCal();
-
-function toggleMenu() {
-    document.getElementById('navMenu').classList.toggle('aberto');
-}
 </script>
 </body>
 </html>

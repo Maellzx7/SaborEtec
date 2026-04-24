@@ -8,6 +8,7 @@
 // ============================================================
 
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/config/_layout.php';
 requerSupervisor();
 
 $pdo = conectar();
@@ -98,8 +99,8 @@ $novidades = $pdo->query("
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel — <?= SITE_NOME ?></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/style.css">
     <style>
         /* Calendário */
@@ -345,25 +346,7 @@ $novidades = $pdo->query("
 </head>
 <body>
 
-<header>
-    <nav class="navbar">
-        <a href="<?= SITE_URL ?>/index.php" class="logo">
-            <div class="logo-icon">🍽️</div>
-            <?= SITE_NOME ?>
-        </a>
-        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
-            <span></span><span></span><span></span>
-        </button>
-        <ul class="nav-links" id="navMenu">
-            <li><a href="<?= SITE_URL ?>/index.php">Cardápio</a></li>
-            <li><a href="<?= SITE_URL ?>/dashboard.php" class="ativo">Painel</a></li>
-            <li><a href="<?= SITE_URL ?>/cardapio.php">Gerenciar Pratos</a></li>
-            <li><a href="<?= SITE_URL ?>/usuarios.php">Usuários</a></li>
-            <li><a href="<?= SITE_URL ?>/logout.php">Sair</a></li>
-            <li><span class="nav-user">👤 <?= escape($_SESSION['nome']) ?></span></li>
-        </ul>
-    </nav>
-</header>
+<?php renderHeader('dashboard.php'); ?>
 
 <main>
 <div class="container">
@@ -480,9 +463,7 @@ $novidades = $pdo->query("
 </div>
 </main>
 
-<footer>
-    <strong><?= SITE_NOME ?></strong> · ETEC de Peruíbe · Sistema de Gestão da Merenda Escolar
-</footer>
+<?php renderFooter(); ?>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
